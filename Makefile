@@ -4,7 +4,8 @@ BUSYBOX := busybox
 default: kernel.img rootfs.img
 
 run: kernel.img rootfs.img
-	qemu-system-x86_64 -kernel kernel.img -append "root=/dev/ram rdinit=/sbin/init" -initrd rootfs.img -net nic,model=e1000 -net user
+	#qemu-system-x86_64 -kernel kernel.img -append "root=/dev/ram rdinit=/sbin/init" -initrd rootfs.img -net nic,model=e1000 -net user
+	qemu-system-x86_64 -kernel kernel.img -nographic  -append "root=/dev/ram rdinit=/sbin/init console=ttyS0" -initrd rootfs.img -net nic,model=e1000 -net user
 
 debug: kernel.img rootfs.img
 	qemu-system-x86_64 -kernel kernel.img -append "root=/dev/ram rdinit=/sbin/init kgdboc=ttyS0,115200 kgdbwait" -initrd rootfs.img -net nic,model=e1000 -net user -serial tcp::1234,server &
