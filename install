@@ -12,7 +12,7 @@ then
 
 	case $REPLY in
 		y | Y)
-			git clone git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git $LINUX
+			git clone git@github.com:hominlinx/linux-bananapi.git $LINUX
 			;;
 		*)
 			echo "So, please prepare linux source(in a directory named $LINUX) by yourself."
