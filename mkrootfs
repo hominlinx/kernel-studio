@@ -12,34 +12,71 @@ BUSYBOX=busybox
 #创建rootfs目录（根目录），根文件系统内的文件全部放到这里
 sudo rm -rf rootfs
 sudo mkdir rootfs
+echo "======"
 
+cd rootfs
 
-sudo cp -rf ${CWD}/${BUSYBOX}/_install/* rootfs/
+sudo cp -rf ${CWD}/${BUSYBOX}/_install/* ./
 
-sudo mkdir -p rootfs/dev
-sudo mkdir -p rootfs/proc
-sudo mkdir -p rootfs/sys
-sudo mkdir -p rootfs/lib
-sudo mkdir -p rootfs/tmp
+sudo mkdir -p dev tmp proc sys lib var opt mnt home etc
+
+sudo mkdir -p etc/init.d
+
 #创建4个tty端终设备
-sudo mknod rootfs/dev/tty1 c 4 1
+sudo mknod dev/tty1 c 4 1
 
-sudo mknod rootfs/dev/tty2 c 4 2
+sudo mknod dev/tty2 c 4 2
 
-sudo mknod rootfs/dev/tty3 c 4 3
+sudo mknod dev/tty3 c 4 3
 
-sudo mknod rootfs/dev/tty4 c 4 4
+sudo mknod dev/tty4 c 4 4
 
-sudo cp -P /usr/arm-linux-gnueabihf/lib/* rootfs/lib/
+sudo cp -P /usr/arm-linux-gnueabihf/lib/* lib/
 
 
+sudo sh -c "cat << EOF > etc/profile
+echo
+echo \"Let's hack the kernel!\"
+echo
+EOF
+"
+
+sudo sh -c "cat << EOF > etc/fstab
+proc  /proc  proc  defaults  0  0
+sysfs  /sys  sysfs defaults  0  0
+tmpfs /tmp tmpfs defaults 0 0
+EOF
+"
+sudo sh -c "cat << EOF > etc/inittab
+::sysinit:/etc/init.d/rcS
+::respawn:-/bin/sh
+tty2::askfirst:-/bin/sh
+::ctrlaltdel:/bin/umount -a -r
+EOF
+"
+
+sudo sh -c "cat << EOF > etc/init.d/rcS
+#!bin/sh
+/bin/mount -a
+/sbin/mdev -s
+/sbin/ifconfig eth0 up >/dev/null 2>&1 \
+    && /sbin/udhcpc eth0 >/dev/null 2>&1
+EOF
+"
+sudo chmod 755 etc/init.d/rcS
+
+
+cd ${CWD}
+#开始创建
+rm a9rootfs.ext3
 dd if=/dev/zero of=a9rootfs.ext3 bs=1M count=100
 
 mkfs.ext3 a9rootfs.ext3
 sudo mkdir tmpfs
-sudo mount -t ext3 a9rootfs.ext3 tmpfs/ -o loop
+sudo mount -t ext3 a9rootfs.ext3 tmpfs/ -o loop,rw
 sudo cp -r rootfs/*  tmpfs/
 sudo umount tmpfs
+sudo rm -rf tmpfs
 cp a9rootfs.ext3 ${CWD}/${1}
 
 exit 0

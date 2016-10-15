@@ -3,3 +3,4 @@ linux
 kernel.img
 rootfs.img
 rootfs/
+*.ext3
