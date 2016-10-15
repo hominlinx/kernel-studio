@@ -2,3 +2,4 @@ busybox
 linux
 kernel.img
 rootfs.img
+rootfs/

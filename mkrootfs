@@ -1,55 +1,45 @@
 #!/bin/bash
 
-[ "$#" = "1" ] || { echo "Usage: $(basename "$0") filename_of_image"; exit 1; }
+#制作根文件系统，思路：先在Ubuntu主机环境下，形成目录结构，里面存放的文件和目录与单板上运行所需要的目录结构完全一样，然后再打包成镜像（在开发板看来就是SD卡），这个临时的目录结构称为根目录
+
+
 
 CWD=$(pwd)
 BUSYBOX=busybox
 
-TMPDIR=$(mktemp -d .tmp.XXXXXXXX)
+[ "$#" = "1"  ] || { echo "Usage: $(basename "$0") filename_of_image"; exit 1;  }
 
-cd $TMPDIR
+#创建rootfs目录（根目录），根文件系统内的文件全部放到这里
+sudo rm -rf rootfs
+sudo mkdir rootfs
 
-mkdir -p dev etc/init.d mnt proc root sys tmp
-chmod a+rwxt tmp
 
-cp -rf ${CWD}/${BUSYBOX}/_install/* ./
+sudo cp -rf ${CWD}/${BUSYBOX}/_install/* rootfs/
 
-mkdir -p usr/share/udhcpc
-cp -rf ${CWD}/${BUSYBOX}/examples/udhcp/simple.script ./usr/share/udhcpc/default.script
+sudo mkdir -p rootfs/dev
+sudo mkdir -p rootfs/proc
+sudo mkdir -p rootfs/sys
+sudo mkdir -p rootfs/lib
+sudo mkdir -p rootfs/tmp
+#创建4个tty端终设备
+sudo mknod rootfs/dev/tty1 c 4 1
 
-cat << EOF > etc/profile
-echo
-echo "Let's hack the kernel!"
-echo
-EOF
+sudo mknod rootfs/dev/tty2 c 4 2
 
-cat << EOF > etc/fstab
-proc  /proc  proc  defaults  0  0
-sysfs  /sys  sysfs defaults  0  0
-tmpfs  /tmp  tmpfs defaults  0  0
-EOF
+sudo mknod rootfs/dev/tty3 c 4 3
 
-cat << EOF > etc/inittab
-::sysinit:/etc/init.d/rcS
-::respawn:-/bin/sh
-tty2::askfirst:-/bin/sh
-::ctrlaltdel:/bin/umount -a -r
-EOF
+sudo mknod rootfs/dev/tty4 c 4 4
 
-cat << EOF > etc/init.d/rcS
-#!bin/sh
-/bin/mount -a
-/sbin/mdev -s
-/sbin/ifconfig eth0 up >/dev/null 2>&1 \
-&& /sbin/udhcpc eth0 >/dev/null 2>&1
-EOF
+sudo cp -P /usr/arm-linux-gnueabihf/lib/* rootfs/lib/
 
-chmod 755 etc/init.d/rcS
 
-find ./ | cpio -o -H newc | gzip > ${CWD}/${1}
+dd if=/dev/zero of=a9rootfs.ext3 bs=1M count=100
 
-cd $CWD
-
-rm -rf $TMPDIR
+mkfs.ext3 a9rootfs.ext3
+sudo mkdir tmpfs
+sudo mount -t ext3 a9rootfs.ext3 tmpfs/ -o loop
+sudo cp -r rootfs/*  tmpfs/
+sudo umount tmpfs
+cp a9rootfs.ext3 ${CWD}/${1}
 
 exit 0

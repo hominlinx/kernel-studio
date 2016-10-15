@@ -39,7 +39,8 @@ then
 fi
 
 #将config cp到目标位置
-make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- LOADADDR=0x48000000  INSTALL_MOD_PATH=./_install O=../$TARGET_LINUX -C $LINUX bananapi_defconfig
+#make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- LOADADDR=0x48000000  INSTALL_MOD_PATH=./_install O=../$TARGET_LINUX -C $LINUX sun4i_defconfig
+make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- LOADADDR=0x48000000  INSTALL_MOD_PATH=./_install O=../$TARGET_LINUX -C $LINUX  vexpress_defconfig 
 
 
 # setting up busybox source tree
@@ -59,5 +60,5 @@ then
 	esac
 fi
 
-
-make -C $BUSYBOX defconfig
+make CROSS_COMPILE=arm-linux-gnueabihf- -C $BUSYBOX defconfig
+#make -C $BUSYBOX defconfig
