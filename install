@@ -2,7 +2,9 @@
 
 # source directories
 LINUX=linux
+TARGET_LINUX=target/linux
 BUSYBOX=busybox
+
 
 # setting up linux source tree
 
@@ -21,15 +23,24 @@ then
 	esac
 fi
 
-make -C $LINUX defconfig
+#创建target/linux , 目的是将这些生成物放到target/linux下。
+if [ ! -d  $TARGET_LINUX ]
+then
+	read -p "Linux target doesn't exist, mkdir it? [y/N]" REPLY
+	case $REPLY in
+		y | Y)
+			mkdir -p $TARGET_LINUX
+			;;
+		*)
+			echo "dump..."
+			exit 1
+			;;
+	esac
+fi
 
-${LINUX}/scripts/config --file ${LINUX}/.config --enable CONFIG_EXPERIMENTAL
-${LINUX}/scripts/config --file ${LINUX}/.config --enable CONFIG_DEBUG_INFO
-${LINUX}/scripts/config --file ${LINUX}/.config --enable CONFIG_KGDB
-${LINUX}/scripts/config --file ${LINUX}/.config --enable CONFIG_KGDB_SERIAL_CONSOLE
-${LINUX}/scripts/config --file ${LINUX}/.config --disable CONFIG_DEBUG_RODATA
+#将config cp到目标位置
+make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- LOADADDR=0x48000000  INSTALL_MOD_PATH=./_install O=../$TARGET_LINUX -C $LINUX bananapi_defconfig
 
-yes "" | make -C $LINUX oldconfig
 
 # setting up busybox source tree
 
@@ -50,10 +61,3 @@ fi
 
 
 make -C $BUSYBOX defconfig
-
-${LINUX}/scripts/config --file ${BUSYBOX}/.config --enable CONFIG_STATIC
-${LINUX}/scripts/config --file ${BUSYBOX}/.config --enable CONFIG_INSTALL_NO_USR
-${LINUX}/scripts/config --file ${BUSYBOX}/.config --disable CONFIG_INETD
-${LINUX}/scripts/config --file ${BUSYBOX}/.config --disable CONFIG_FEATURE_MOUNT_NFS
-
-yes "" | make -C $BUSYBOX oldconfig

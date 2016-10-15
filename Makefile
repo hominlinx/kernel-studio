@@ -1,4 +1,5 @@
 LINUX := linux
+TARGET_LINUX=target/linux
 BUSYBOX := busybox
 
 default: kernel.img rootfs.img
@@ -14,19 +15,16 @@ debug: kernel.img rootfs.img
 clean:
 	rm -f kernel.img rootfs.img
 
-update: $(LINUX)/.config $(BUSYBOX)/.config
-	yes "" | make -C $(LINUX) oldconfig
-	yes "" | make -C $(BUSYBOX) oldconfig
-
-kernel.img: $(LINUX)/.config
+kernel.img: $(TARGET_LINUX)/.config
+	make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- LOADADDR=0x48000000  INSTALL_MOD_PATH=./_install O=../${TARGET_LINUX} -C ${LINUX} uImage
 	make -C $(LINUX) bzImage -j4
 	cp $(LINUX)/arch/x86/boot/bzImage $@
 
 rootfs.img: $(BUSYBOX)/.config
-	make -C $(BUSYBOX) install -j4
+	make CROSS_COMPILE=arm-linux-gnueabihf- -C $(BUSYBOX) install -j4
 	./mkrootfs $@
 
 install $(LINUX)/.config $(BUSYBOX)/.config:
 	./install
 
-.PHONY: default run debug clean update install
+.PHONY: default run debug clean install
